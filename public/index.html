@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Academia | Gestão</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Login -->
+  <section id="tela-login" class="tela-login" hidden>
+    <form id="form-login" class="cartao login">
+      <h1>Academia</h1>
+      <p class="sub">Acesse o sistema de gestão</p>
+      <label>E-mail <input type="email" name="email" required autocomplete="username" value="admin@academia.com"></label>
+      <label>Senha <input type="password" name="senha" required autocomplete="current-password" value="admin123"></label>
+      <button type="submit">Entrar</button>
+      <p class="mensagem" id="msg-login" role="alert"></p>
+      <p class="dica">Usuários de teste: admin@academia.com / admin123 · recepcao@academia.com / recepcao123 · instrutor@academia.com / instrutor123</p>
+    </form>
+  </section>
+
+  <!-- Aplicação -->
+  <div id="tela-app" hidden>
+    <header class="topo">
+      <strong>Academia</strong>
+      <nav>
+        <button class="aba ativa" data-aba="alunos">Alunos</button>
+        <button class="aba" data-aba="cadastro">Cadastrar aluno</button>
+        <button class="aba" data-aba="pagamentos">Pagamentos</button>
+        <button class="aba" data-aba="presencas">Presenças</button>
+      </nav>
+      <div class="usuario"><span id="nome-usuario"></span> <button id="btn-sair" class="link">Sair</button></div>
+    </header>
+
+    <main>
+      <!-- Alunos -->
+      <section id="aba-alunos" class="painel">
+        <div class="barra">
+          <h2>Alunos e situação</h2>
+          <div class="filtros">
+            <input id="busca-aluno" type="search" placeholder="Buscar por nome ou CPF">
+            <select id="filtro-status">
+              <option value="">Todas as situações</option>
+              <option value="EM_DIA">Em dia</option>
+              <option value="INADIMPLENTE">Inadimplente</option>
+              <option value="BLOQUEADO">Bloqueado</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabela-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>CPF</th><th>Idade</th><th>Plano</th><th>Pago até</th><th>Situação</th><th></th></tr></thead>
+            <tbody id="lista-alunos"></tbody>
+          </table>
+        </div>
+        <div id="detalhe-aluno" class="cartao detalhe" hidden></div>
+      </section>
+
+      <!-- Cadastro -->
+      <section id="aba-cadastro" class="painel" hidden>
+        <h2>Cadastrar aluno</h2>
+        <form id="form-aluno" class="cartao formulario">
+          <label>Nome* <input name="nome" required></label>
+          <label>CPF* <input name="cpf" required placeholder="000.000.000-00"></label>
+          <label>Data de nascimento* <input name="dataNascimento" type="date" required></label>
+          <label>Telefone* <input name="telefone" required placeholder="(11) 98888-7777"></label>
+          <label>Plano* <select name="plano" id="select-plano" required></select></label>
+          <fieldset id="grupo-responsavel" hidden>
+            <legend>Responsável (obrigatório para menores de 18 anos)</legend>
+            <label>Nome do responsável* <input name="respNome"></label>
+            <label>CPF do responsável* <input name="respCpf"></label>
+            <label>Telefone do responsável* <input name="respTelefone"></label>
+          </fieldset>
+          <p class="info" id="info-idade"></p>
+          <button type="submit">Cadastrar</button>
+          <p class="mensagem" id="msg-aluno" role="alert"></p>
+        </form>
+      </section>
+
+      <!-- Pagamentos -->
+      <section id="aba-pagamentos" class="painel" hidden>
+        <h2>Registrar pagamento</h2>
+        <form id="form-pagamento" class="cartao formulario">
+          <label>Aluno* <select name="alunoId" class="select-aluno" required></select></label>
+          <p class="info" id="info-pagamento"></p>
+          <label>Forma de pagamento*
+            <select name="formaPagamento" required>
+              <option value="PIX">PIX</option>
+              <option value="DINHEIRO">Dinheiro</option>
+              <option value="CARTAO_DEBITO">Cartão de débito</option>
+              <option value="CARTAO_CREDITO">Cartão de crédito</option>
+            </select>
+          </label>
+          <label>Data do pagamento <input name="dataPagamento" type="date"></label>
+          <button type="submit">Registrar pagamento</button>
+          <p class="mensagem" id="msg-pagamento" role="alert"></p>
+        </form>
+        <h3>Pagamentos registrados</h3>
+        <div class="tabela-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Aluno</th><th>Plano</th><th>Valor</th><th>Forma</th><th>Período coberto</th></tr></thead>
+            <tbody id="lista-pagamentos"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Presenças -->
+      <section id="aba-presencas" class="painel" hidden>
+        <h2>Registrar presença ou falta</h2>
+        <form id="form-presenca" class="cartao formulario">
+          <label>Aluno* <select name="alunoId" class="select-aluno" required></select></label>
+          <p class="info" id="info-presenca"></p>
+          <label>Data <input name="data" type="date"></label>
+          <div class="botoes">
+            <button type="submit" name="status" value="PRESENTE">Registrar presença</button>
+            <button type="submit" name="status" value="FALTA" class="secundario">Registrar falta</button>
+          </div>
+          <p class="mensagem" id="msg-presenca" role="alert"></p>
+        </form>
+        <div class="barra">
+          <h3>Registros</h3>
+          <label class="inline">Data <input id="filtro-data-presenca" type="date"></label>
+        </div>
+        <div class="tabela-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Aluno</th><th>Registro</th></tr></thead>
+            <tbody id="lista-presencas"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <footer class="rodape">
+      <a href="/api-docs" target="_blank">Documentação da API (Swagger)</a>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

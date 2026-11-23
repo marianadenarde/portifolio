@@ -1,0 +1,39 @@
+{
+  "name": "academia-gestao",
+  "version": "1.0.0",
+  "description": "API REST e site Web para gestão de uma academia",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marianadenarde/portifolio.git"
+  },
+  "keywords": [
+    "academia",
+    "express",
+    "mongodb",
+    "swagger"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/marianadenarde/portifolio/issues"
+  },
+  "homepage": "https://github.com/marianadenarde/portifolio#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "js-yaml": "^5.5.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb-memory-server": "^11.4.0",
+    "mongoose": "^9.12.3",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

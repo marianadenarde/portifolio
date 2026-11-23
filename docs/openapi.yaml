@@ -1,0 +1,496 @@
+openapi: 3.0.3
+info:
+  title: API Academia
+  version: 1.0.0
+  description: |
+    API REST para gestão de uma academia: login, cadastro de alunos, registro de
+    pagamentos e situação financeira, e registro de presenças e faltas.
+
+    **Autenticação:** faça `POST /api/auth/login` e use o token retornado no botão
+    **Authorize** (`Bearer <token>`). Usuário de teste: `admin@academia.com` / `admin123`.
+
+    **Regras de negócio**
+    1. Campos obrigatórios do aluno: nome, CPF, data de nascimento, telefone e plano.
+    2. Idade mínima de 14 anos. Menores de 18 precisam de responsável cadastrado.
+    3. Planos com valores fixos: Mensal R$ 100, Trimestral R$ 270, Semestral R$ 500.
+    4. Aluno inadimplente há mais de 30 dias fica bloqueado para registrar presença.
+    5. Só é permitida uma presença (ou falta) por aluno por dia.
+servers:
+  - url: http://localhost:3000
+    description: Servidor local
+tags:
+  - name: Autenticação
+  - name: Planos
+  - name: Alunos
+  - name: Pagamentos
+  - name: Presenças
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Realiza login e retorna um token JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+            example: { email: admin@academia.com, senha: admin123 }
+      responses:
+        '200':
+          description: Login realizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/auth/me:
+    get:
+      tags: [Autenticação]
+      summary: Retorna o usuário autenticado
+      responses:
+        '200':
+          description: Usuário autenticado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/planos:
+    get:
+      tags: [Planos]
+      summary: Lista os planos (produtos) com valores fixos
+      responses:
+        '200':
+          description: Lista de planos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Plano' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/alunos:
+    get:
+      tags: [Alunos]
+      summary: Lista os alunos com a situação de cada um
+      parameters:
+        - in: query
+          name: busca
+          schema: { type: string }
+          description: Filtra por parte do nome ou do CPF
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/StatusSituacao' }
+          description: Filtra pela situação financeira
+      responses:
+        '200':
+          description: Lista de alunos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Aluno' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Alunos]
+      summary: Cadastra um aluno
+      description: |
+        Campos obrigatórios: `nome`, `cpf`, `dataNascimento`, `telefone` e `plano`
+        (código `MENSAL`, `TRIMESTRAL`, `SEMESTRAL` ou o `_id` do plano).
+        Idade mínima de 14 anos; menores de 18 devem informar `responsavel`.
+        A data de matrícula é a data atual.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AlunoRequest' }
+            examples:
+              adulto:
+                summary: Aluno maior de idade
+                value:
+                  nome: Fernanda Alves
+                  cpf: '321.654.987-91'
+                  dataNascimento: '1992-06-20'
+                  telefone: '(11) 98888-7777'
+                  plano: MENSAL
+              menor:
+                summary: Aluno menor de idade com responsável
+                value:
+                  nome: Gabriel Costa
+                  cpf: '74185296355'
+                  dataNascimento: '2010-03-10'
+                  telefone: '11977776666'
+                  plano: TRIMESTRAL
+                  responsavel:
+                    nome: Paulo Costa
+                    cpf: '52998224725'
+                    telefone: '11966665555'
+      responses:
+        '201':
+          description: Aluno cadastrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Aluno' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/alunos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/AlunoId'
+    get:
+      tags: [Alunos]
+      summary: Detalha um aluno
+      responses:
+        '200':
+          description: Aluno
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Aluno' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/alunos/{id}/situacao:
+    parameters:
+      - $ref: '#/components/parameters/AlunoId'
+    get:
+      tags: [Alunos, Pagamentos]
+      summary: Situação financeira do aluno
+      responses:
+        '200':
+          description: Situação do aluno
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      aluno:
+                        type: object
+                        properties:
+                          _id: { type: string }
+                          nome: { type: string }
+                          plano: { $ref: '#/components/schemas/Plano' }
+                  - $ref: '#/components/schemas/Situacao'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/alunos/{id}/pagamentos:
+    parameters:
+      - $ref: '#/components/parameters/AlunoId'
+    get:
+      tags: [Alunos, Pagamentos]
+      summary: Histórico de pagamentos do aluno
+      responses:
+        '200':
+          description: Pagamentos do aluno
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Pagamento' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/alunos/{id}/presencas:
+    parameters:
+      - $ref: '#/components/parameters/AlunoId'
+    get:
+      tags: [Alunos, Presenças]
+      summary: Resumo de presenças e faltas do aluno
+      responses:
+        '200':
+          description: Resumo de frequência
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResumoPresencas' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/pagamentos:
+    get:
+      tags: [Pagamentos]
+      summary: Lista pagamentos
+      parameters:
+        - in: query
+          name: alunoId
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lista de pagamentos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Pagamento' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Pagamentos]
+      summary: Registra um pagamento
+      description: |
+        O valor é sempre o valor fixo do plano do aluno; se `valor` for enviado e
+        for diferente, a requisição é recusada (422). Cada pagamento cobre um período
+        do plano, iniciando no fim do período pago anteriormente (ou na matrícula).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PagamentoRequest' }
+      responses:
+        '201':
+          description: Pagamento registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagamento: { $ref: '#/components/schemas/Pagamento' }
+                  situacao: { $ref: '#/components/schemas/Situacao' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/presencas:
+    get:
+      tags: [Presenças]
+      summary: Lista registros de presença e falta
+      parameters:
+        - in: query
+          name: alunoId
+          schema: { type: string }
+        - in: query
+          name: data
+          schema: { type: string, format: date }
+        - in: query
+          name: dataInicio
+          schema: { type: string, format: date }
+        - in: query
+          name: dataFim
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Lista de registros
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Presenca' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Presenças]
+      summary: Registra presença ou falta
+      description: |
+        - Apenas um registro por aluno por dia (409 se já existir).
+        - Alunos inadimplentes há mais de 30 dias não podem registrar presença (403).
+        - Não aceita datas futuras nem anteriores à matrícula.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PresencaRequest' }
+      responses:
+        '201':
+          description: Registro criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Presenca' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Aluno bloqueado por inadimplência há mais de 30 dias
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    AlunoId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string }
+      description: Identificador do aluno
+
+  responses:
+    BadRequest:
+      description: Dados inválidos
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    Unauthorized:
+      description: Não autenticado ou credenciais inválidas
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    Conflict:
+      description: Registro duplicado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    Unprocessable:
+      description: Violação de regra de negócio
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+
+  schemas:
+    Erro:
+      type: object
+      properties:
+        erro: { type: string, example: Dados inválidos. }
+        detalhes:
+          oneOf:
+            - type: array
+              items: { type: string }
+            - type: object
+    LoginRequest:
+      type: object
+      required: [email, senha]
+      properties:
+        email: { type: string, format: email }
+        senha: { type: string }
+    LoginResponse:
+      type: object
+      properties:
+        token: { type: string }
+        tipo: { type: string, example: Bearer }
+        expiraEm: { type: string, example: 8h }
+        usuario: { $ref: '#/components/schemas/Usuario' }
+    Usuario:
+      type: object
+      properties:
+        _id: { type: string }
+        nome: { type: string }
+        email: { type: string }
+        perfil: { type: string, enum: [ADMIN, RECEPCAO, INSTRUTOR] }
+    Plano:
+      type: object
+      properties:
+        _id: { type: string }
+        codigo: { type: string, enum: [MENSAL, TRIMESTRAL, SEMESTRAL] }
+        nome: { type: string, example: Mensal }
+        duracaoMeses: { type: integer, example: 1 }
+        valor: { type: number, example: 100 }
+    Responsavel:
+      type: object
+      required: [nome, cpf, telefone]
+      properties:
+        nome: { type: string }
+        cpf: { type: string, description: Com ou sem máscara }
+        telefone: { type: string, description: DDD + número }
+    AlunoRequest:
+      type: object
+      required: [nome, cpf, dataNascimento, telefone, plano]
+      properties:
+        nome: { type: string }
+        cpf: { type: string, description: CPF válido, com ou sem máscara }
+        dataNascimento: { type: string, format: date, example: '2000-01-31' }
+        telefone: { type: string, description: DDD + número (10 ou 11 dígitos) }
+        plano: { type: string, description: 'Código (MENSAL, TRIMESTRAL, SEMESTRAL) ou _id do plano' }
+        responsavel: { $ref: '#/components/schemas/Responsavel' }
+    StatusSituacao:
+      type: string
+      enum: [EM_DIA, INADIMPLENTE, BLOQUEADO]
+    Situacao:
+      type: object
+      properties:
+        status: { $ref: '#/components/schemas/StatusSituacao' }
+        descricao: { type: string }
+        pagoAte: { type: string, format: date, nullable: true, description: Fim do período coberto pelo último pagamento }
+        vencimento: { type: string, format: date }
+        diasEmAtraso: { type: integer }
+        ultimoPagamento: { type: string, format: date, nullable: true }
+        podeRegistrarPresenca: { type: boolean }
+    Aluno:
+      type: object
+      properties:
+        _id: { type: string }
+        nome: { type: string }
+        cpf: { type: string }
+        dataNascimento: { type: string, format: date }
+        idade: { type: integer }
+        telefone: { type: string }
+        plano: { $ref: '#/components/schemas/Plano' }
+        dataMatricula: { type: string, format: date }
+        responsavel:
+          allOf: [{ $ref: '#/components/schemas/Responsavel' }]
+          nullable: true
+        situacao: { $ref: '#/components/schemas/Situacao' }
+    PagamentoRequest:
+      type: object
+      required: [alunoId, formaPagamento]
+      properties:
+        alunoId: { type: string }
+        formaPagamento: { type: string, enum: [DINHEIRO, PIX, CARTAO_CREDITO, CARTAO_DEBITO] }
+        dataPagamento: { type: string, format: date, description: Padrão é a data atual }
+        valor: { type: number, description: Opcional. Se enviado, deve ser igual ao valor do plano }
+    Pagamento:
+      type: object
+      properties:
+        _id: { type: string }
+        aluno:
+          type: object
+          properties:
+            _id: { type: string }
+            nome: { type: string }
+            cpf: { type: string }
+        plano: { $ref: '#/components/schemas/Plano' }
+        valor: { type: number }
+        formaPagamento: { type: string }
+        dataPagamento: { type: string, format: date }
+        periodoInicio: { type: string, format: date }
+        periodoFim: { type: string, format: date }
+    PresencaRequest:
+      type: object
+      required: [alunoId]
+      properties:
+        alunoId: { type: string }
+        status: { type: string, enum: [PRESENTE, FALTA], default: PRESENTE }
+        data: { type: string, format: date, description: Padrão é a data atual }
+    Presenca:
+      type: object
+      properties:
+        _id: { type: string }
+        aluno:
+          type: object
+          properties:
+            _id: { type: string }
+            nome: { type: string }
+            cpf: { type: string }
+        data: { type: string, format: date }
+        status: { type: string, enum: [PRESENTE, FALTA] }
+    ResumoPresencas:
+      type: object
+      properties:
+        aluno:
+          type: object
+          properties:
+            _id: { type: string }
+            nome: { type: string }
+        totalPresencas: { type: integer }
+        totalFaltas: { type: integer }
+        frequencia: { type: number, nullable: true, description: Percentual de presenças }
+        registros:
+          type: array
+          items: { $ref: '#/components/schemas/Presenca' }
