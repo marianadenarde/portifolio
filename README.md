@@ -75,8 +75,25 @@ A aplicação sobe em `http://localhost:3000`. Variáveis de ambiente opcionais:
 | `JWT_SECRET`     | `academia-segredo-dev`  | Segredo usado para assinar os tokens               |
 | `JWT_EXPIRES_IN` | `8h`                    | Validade do token                                  |
 | `APP_TZ`         | `America/Sao_Paulo`     | Fuso usado para definir "hoje" nas regras de data  |
+| `MONGOMS_LAUNCH_TIMEOUT` | `60000`         | Tempo máximo (ms) para o MongoDB em memória iniciar |
+| `MONGOMS_VERSION` | padrão da biblioteca   | Versão do MongoDB usada pelo mongodb-memory-server |
 
 Para usar a API pelo Swagger: faça `POST /api/auth/login`, copie o `token` e cole no botão **Authorize**.
+
+### Solução de problemas
+
+**`Instance failed to start within ...ms`**: o MongoDB demorou demais para iniciar. É comum no Windows na primeira execução, porque o antivírus analisa o executável recém-baixado.
+
+1. Execute `npm start` de novo. Da segunda vez costuma ser bem mais rápido.
+2. Aumente o tempo limite (o padrão desta aplicação é 60 segundos):
+   - PowerShell: `$env:MONGOMS_LAUNCH_TIMEOUT=120000; npm start`
+   - Prompt de Comando: `set MONGOMS_LAUNCH_TIMEOUT=120000 && npm start`
+   - Linux/macOS: `MONGOMS_LAUNCH_TIMEOUT=120000 npm start`
+3. No Windows, instale o [Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe). Sem ele, o MongoDB não inicia.
+4. Use uma versão anterior do MongoDB, que é baixada automaticamente: `$env:MONGOMS_VERSION="7.0.14"; npm start` (PowerShell).
+5. Para ver o motivo exato da falha, ative o log detalhado: `$env:MONGOMS_DEBUG=1; npm start` (PowerShell).
+
+O binário do MongoDB fica em cache em `node_modules/.cache/mongodb-memory-server`. Se o download foi interrompido, apague essa pasta e execute de novo.
 
 ## Dados de teste incluídos
 

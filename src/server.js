@@ -4,8 +4,27 @@ const app = require('./app');
 const { port } = require('./config');
 const popularBanco = require('./seed');
 
+// Tempo máximo para o MongoDB em memória iniciar. O padrão da biblioteca (10s)
+// costuma ser pouco no Windows, onde o antivírus analisa o executável na primeira execução.
+const TEMPO_INICIO_MONGO = Number(process.env.MONGOMS_LAUNCH_TIMEOUT) || 60000;
+
+async function iniciarMongo() {
+  try {
+    return await MongoMemoryServer.create({ instance: { launchTimeout: TEMPO_INICIO_MONGO } });
+  } catch (err) {
+    console.error('\nNão foi possível iniciar o MongoDB em memória.');
+    console.error('Possíveis soluções (veja a seção "Solução de problemas" do README):');
+    console.error('  1. Execute "npm start" novamente (a primeira execução pode ser mais lenta).');
+    console.error('  2. Aumente o tempo limite: MONGOMS_LAUNCH_TIMEOUT=120000');
+    console.error('  3. No Windows, instale o Microsoft Visual C++ Redistributable (x64).');
+    console.error('  4. Use outra versão do MongoDB: MONGOMS_VERSION=7.0.14');
+    console.error('  5. Veja o log detalhado com MONGOMS_DEBUG=1\n');
+    throw err;
+  }
+}
+
 async function iniciar() {
-  const mongo = await MongoMemoryServer.create();
+  const mongo = await iniciarMongo();
   await mongoose.connect(mongo.getUri(), { dbName: 'academia' });
   console.log('Banco MongoDB em memória iniciado.');
 
