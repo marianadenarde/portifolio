@@ -1,7 +1,7 @@
 {
-  "name": "academia-gestao",
+  "name": "mygym",
   "version": "1.0.0",
-  "description": "API REST e site Web para gestão de uma academia",
+  "description": "MyGym: API REST e site Web para gestão de academia",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

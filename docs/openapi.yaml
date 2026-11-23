@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: API Academia
+  title: API MyGym
   version: 1.0.0
   description: |
     API REST para gestão de uma academia: login, cadastro de alunos, registro de
