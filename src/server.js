@@ -31,7 +31,7 @@ async function iniciar() {
   await popularBanco();
 
   const server = app.listen(port, () => {
-    console.log(`\nAcademia rodando em http://localhost:${port}`);
+    console.log(`\nMyGym rodando em http://localhost:${port}`);
     console.log(`  Site Web .......... http://localhost:${port}/`);
     console.log(`  Swagger UI ........ http://localhost:${port}/api-docs`);
     console.log(`  Especificação YAML  http://localhost:${port}/api-docs/openapi.yaml`);

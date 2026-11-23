@@ -20,7 +20,7 @@ app.get('/api-docs/openapi.yaml', (_req, res) => {
   res.type('text/yaml').send(fs.readFileSync(CAMINHO_YAML, 'utf8'));
 });
 const especificacao = yaml.load(fs.readFileSync(CAMINHO_YAML, 'utf8'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(especificacao, { customSiteTitle: 'API Academia' }));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(especificacao, { customSiteTitle: 'API MyGym' }));
 
 // API
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', hoje: hoje() }));

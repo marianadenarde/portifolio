@@ -1,4 +1,4 @@
-# Academia — API REST e Site Web de Gestão
+# MyGym — API REST e Site Web de Gestão de Academia
 
 ## O que é esta aplicação
 
