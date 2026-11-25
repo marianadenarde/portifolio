@@ -2,12 +2,14 @@
 
 ## O que é esta aplicação
 
-Sistema simples para a gestão de uma academia, composto por uma **API REST** (Node.js + Express) e um **site Web** que a consome. Tem quatro funcionalidades:
+O MyGym é um sistema de gestão de academia, composto por uma **API REST** (Node.js + Express) e um **site Web** que a consome. É usado pelos funcionários da academia (Administrador e Recepção) e tem quatro módulos:
 
-1. **Login** de usuários do sistema (autenticação via JWT).
-2. **Cadastro de alunos**, com validação de CPF, idade mínima e responsável para menores.
-3. **Registro de pagamentos** e **situação financeira** de cada aluno (em dia, inadimplente ou bloqueado).
-4. **Registro de presença e falta** de cada aluno, com resumo de frequência.
+1. **Login**: acesso com e-mail e senha, bloqueio após tentativas erradas e dois perfis de permissão.
+2. **Alunos**: cadastro, edição, consulta e inativação, com dias de treino e responsável para menores.
+3. **Mensalidades**: registro de pagamentos com multa e juros por atraso, e situação de cada aluno (em dia, pendente ou inadimplente).
+4. **Frequência**: registro de presença e falta, faltas automáticas nos dias de treino e alerta de faltas seguidas.
+
+Também tem um **painel inicial** (alunos ativos, inadimplentes, presenças do dia, receita do mês e alertas), um **relatório mensal de recebimentos** e o **histórico** de pagamentos e frequência de cada aluno.
 
 Os dados ficam em um **MongoDB em memória** ([mongodb-memory-server](https://github.com/typegoose/mongodb-memory-server)). O banco é criado e populado com dados de teste toda vez que a aplicação inicia, e **tudo é apagado ao encerrá-la**.
 
@@ -28,13 +30,13 @@ Os dados ficam em um **MongoDB em memória** ([mongodb-memory-server](https://gi
 └── src/
     ├── server.js            # Inicia o MongoDB em memória, popula e sobe o servidor
     ├── app.js               # Configuração do Express, rotas e Swagger
-    ├── config.js            # Porta, segredo JWT, fuso horário e parâmetros das regras
+    ├── config.js            # Porta, JWT, fuso horário e parâmetros das regras de negócio
     ├── seed.js              # Dados de teste
     ├── models/              # Usuario, Plano, Aluno, Pagamento, Presenca
-    ├── services/            # Regras de negócio
+    ├── services/            # Regras de negócio (alunos, mensalidades, frequência, painel...)
     ├── routes/              # Endpoints REST
-    ├── middlewares/         # Autenticação e tratamento de erros
-    └── utils/               # Datas, validação de CPF/telefone, AppError
+    ├── middlewares/         # Autenticação, perfis e tratamento de erros
+    └── utils/               # Datas, validação de CPF/telefone/senha, AppError
 ```
 
 ## Como instalar
@@ -53,7 +55,7 @@ cd portifolio
 npm install
 ```
 
-> Na primeira execução, o `mongodb-memory-server` baixa automaticamente o binário do MongoDB (cerca de 100 MB) de `fastdl.mongodb.org` e o guarda em cache. É necessário acesso à internet nesse momento.
+> Na primeira execução, o `mongodb-memory-server` baixa automaticamente o binário do MongoDB (cerca de 120 MB) de `fastdl.mongodb.org` e o guarda em cache. É necessário acesso à internet nesse momento.
 
 ## Como executar
 
@@ -69,14 +71,14 @@ npm run dev
 
 A aplicação sobe em `http://localhost:3000`. Variáveis de ambiente opcionais:
 
-| Variável         | Padrão                  | Descrição                                          |
-|------------------|-------------------------|----------------------------------------------------|
-| `PORT`           | `3000`                  | Porta HTTP                                         |
-| `JWT_SECRET`     | `academia-segredo-dev`  | Segredo usado para assinar os tokens               |
-| `JWT_EXPIRES_IN` | `8h`                    | Validade do token                                  |
-| `APP_TZ`         | `America/Sao_Paulo`     | Fuso usado para definir "hoje" nas regras de data  |
-| `MONGOMS_LAUNCH_TIMEOUT` | `60000`         | Tempo máximo (ms) para o MongoDB em memória iniciar |
-| `MONGOMS_VERSION` | padrão da biblioteca   | Versão do MongoDB usada pelo mongodb-memory-server |
+| Variável                 | Padrão                 | Descrição                                           |
+|--------------------------|------------------------|-----------------------------------------------------|
+| `PORT`                   | `3000`                 | Porta HTTP                                          |
+| `JWT_SECRET`             | `mygym-segredo-dev`    | Segredo usado para assinar os tokens                |
+| `JWT_EXPIRES_IN`         | `8h`                   | Validade do token                                   |
+| `APP_TZ`                 | `America/Sao_Paulo`    | Fuso usado para definir "hoje" nas regras de data   |
+| `MONGOMS_LAUNCH_TIMEOUT` | `60000`                | Tempo máximo (ms) para o MongoDB em memória iniciar |
+| `MONGOMS_VERSION`        | padrão da biblioteca   | Versão do MongoDB usada pelo mongodb-memory-server  |
 
 Para usar a API pelo Swagger: faça `POST /api/auth/login`, copie o `token` e cole no botão **Authorize**.
 
@@ -97,17 +99,15 @@ O binário do MongoDB fica em cache em `node_modules/.cache/mongodb-memory-serve
 
 ## Dados de teste incluídos
 
-Carregados automaticamente a cada inicialização (`src/seed.js`).
+Carregados automaticamente a cada inicialização (`src/seed.js`). As datas são calculadas a partir do dia em que a aplicação inicia, então cada aluno está sempre na mesma situação.
 
 ### 3 usuários
 
-| Nome          | E-mail                   | Senha          | Perfil    |
-|---------------|--------------------------|----------------|-----------|
-| Administrador | `admin@academia.com`     | `admin123`     | ADMIN     |
-| Recepção      | `recepcao@academia.com`  | `recepcao123`  | RECEPCAO  |
-| Instrutor     | `instrutor@academia.com` | `instrutor123` | INSTRUTOR |
-
-Todos os perfis têm acesso a todas as funcionalidades.
+| Nome           | E-mail                   | Senha         | Perfil        |
+|----------------|--------------------------|---------------|---------------|
+| Administrador  | `admin@academia.com`     | `admin123`    | Administrador |
+| Recepção       | `recepcao@academia.com`  | `recepcao123` | Recepção      |
+| Recepção Noite | `recepcao2@academia.com` | `recepcao456` | Recepção      |
 
 ### 3 produtos (planos)
 
@@ -117,39 +117,52 @@ Todos os perfis têm acesso a todas as funcionalidades.
 | `TRIMESTRAL` | Trimestral | 3 meses | R$ 270,00 |
 | `SEMESTRAL`  | Semestral  | 6 meses | R$ 500,00 |
 
-### Alunos de exemplo
+### 6 alunos de exemplo
 
-As datas são calculadas a partir do dia em que a aplicação inicia, então cada aluno está sempre na mesma situação:
+| Aluno         | CPF            | Plano      | Treinos       | Situação                                                   |
+|---------------|----------------|------------|---------------|------------------------------------------------------------|
+| Ana Souza     | 529.982.247-25 | Mensal     | Seg, Qua, Sex | **Em dia**. Um pagamento antigo foi feito com multa e juros |
+| Bruno Lima    | 111.444.777-35 | Trimestral | Ter, Qui      | **Em dia**. 16 anos, responsável Márcia Lima               |
+| Carla Mendes  | 987.654.321-00 | Mensal     | Seg a Sex     | **Pendente** (3 dias de atraso). Uma falta registrada ontem |
+| Eduardo Pires | 741.852.963-55 | Mensal     | Seg, Qua, Sex | **Inadimplente** (12 dias, com multa). Alerta de faltas    |
+| Diego Rocha   | 456.123.789-55 | Mensal     | Ter, Qui      | **Inadimplente e bloqueado** (45 dias). Alerta de faltas   |
+| Fábio Nunes   | 321.654.987-91 | Semestral  | Seg a Sex     | **Inativo** há 20 dias (histórico mantido)                 |
 
-| Aluno        | CPF            | Plano      | Situação                                    | Observação                                |
-|--------------|----------------|------------|---------------------------------------------|-------------------------------------------|
-| Ana Souza    | 529.982.247-25 | Mensal     | **Em dia** (pago até hoje + 10 dias)        | 2 presenças e 1 falta nos últimos 3 dias  |
-| Bruno Lima   | 111.444.777-35 | Trimestral | **Em dia** (pago até hoje + 60 dias)        | 16 anos, responsável Márcia Lima          |
-| Carla Mendes | 987.654.321-00 | Mensal     | **Inadimplente** (10 dias de atraso)        | Ainda pode registrar presença             |
-| Diego Rocha  | 456.123.789-55 | Mensal     | **Bloqueado** (45 dias de atraso)           | Não pode registrar presença               |
-
-CPFs válidos e livres para testar novos cadastros: `321.654.987-91`, `741.852.963-55`.
+CPFs válidos e livres para testar novos cadastros: `135.792.468-28`, `246.813.579-28`, `864.297.531-82`.
 
 ## Regras de negócio
 
-1. **Campos obrigatórios no cadastro do aluno:** nome, CPF, data de nascimento, telefone e plano. O CPF precisa ser válido (dígitos verificadores) e único. O telefone precisa ter DDD + número (10 ou 11 dígitos).
-2. **Idade mínima de 14 anos.** Alunos **menores de 18 anos** precisam de um **responsável** com nome, CPF válido (diferente do CPF do aluno) e telefone.
-3. **Planos com valores fixos:** Mensal R$ 100, Trimestral R$ 270 e Semestral R$ 500. O valor do pagamento é sempre o do plano do aluno; se outro valor for enviado, a API recusa.
-4. **Aluno inadimplente há mais de 30 dias fica bloqueado** para registrar presença. Faltas ainda podem ser registradas.
-5. **Só é permitido um registro por aluno por dia** (presença ou falta), garantido também por índice único no banco.
+### Login
 
-### Como a situação financeira é calculada
+- **RN01** Só usuários cadastrados acessam o sistema (e-mail + senha). Todas as rotas da API, exceto login, health e documentação, exigem `Authorization: Bearer <token>`.
+- **RN02** A senha deve ter no mínimo 8 caracteres, com pelo menos uma letra e um número. Vale ao criar usuários e ao alterar a senha.
+- **RN03** Depois de 3 tentativas erradas seguidas, o usuário fica bloqueado por 15 minutos. O Administrador pode desbloquear antes disso em Configurações.
+- **RN04** Há dois perfis. O **Administrador** pode tudo. A **Recepção** não pode inativar alunos nem alterar o valor dos planos. Criar e desbloquear usuários e reativar alunos também é exclusivo do Administrador.
 
-- A data de matrícula é o dia do cadastro.
-- Cada pagamento cobre um período igual à duração do plano. Esse período começa onde terminou o anterior, ou na matrícula se for o primeiro pagamento. Assim, quem está atrasado quita primeiro os meses em aberto.
-- **Vencimento** é o fim do último período pago (ou a data de matrícula, se o aluno nunca pagou).
-- **EM_DIA**: hoje ≤ vencimento · **INADIMPLENTE**: 1 a 30 dias após o vencimento · **BLOQUEADO**: mais de 30 dias após o vencimento.
+### Cadastro de aluno
 
-### Outras validações
+- **RN05** Campos obrigatórios: nome, CPF, data de nascimento, telefone e plano. Os dias de treino são opcionais (padrão: segunda a sexta).
+- **RN06** O CPF deve ser válido (dígitos verificadores) e único.
+- **RN07** A idade mínima é 14 anos. Menores de 18 precisam de um responsável com nome, CPF válido (diferente do CPF do aluno) e telefone.
+- **RN08** Aluno não é excluído, é inativado, para manter o histórico de pagamentos e frequência. Aluno inativo não registra pagamentos, presenças nem faltas, e pode ser reativado.
 
-- Pagamentos e presenças não aceitam datas futuras.
-- Presenças e faltas não podem ser registradas antes da data de matrícula.
-- Todas as rotas da API, exceto login, health e documentação, exigem `Authorization: Bearer <token>`.
+### Mensalidade
+
+- **RN09** Planos com valores fixos: Mensal R$ 100, Trimestral R$ 270 e Semestral R$ 500. O valor só muda se o Administrador alterá-lo, e a alteração vale para os próximos pagamentos.
+- **RN10** O vencimento é sempre no mesmo dia da matrícula. Em meses mais curtos, vence no último dia do mês (matrícula em 31/01 vence em 28/02, 31/03, 30/04...).
+- **RN11** Pagamento até o vencimento ou com até 5 dias de atraso: valor normal. A partir do 6º dia: multa de 2% mais juros de 0,1% por dia de atraso, contados desde o vencimento. O sistema calcula o valor.
+- **RN12** Status do aluno: **Em dia**, **Pendente** (1 a 5 dias de atraso) e **Inadimplente** (mais de 5 dias).
+- **RN13** O valor pago não pode ser zero nem negativo. Se for enviado, também precisa ser igual ao valor calculado.
+- **RN14** Aluno inadimplente há mais de 30 dias fica bloqueado para registrar presença.
+
+Cada pagamento quita o período mais antigo em aberto. Quem está atrasado paga primeiro os meses devidos, cada um com a multa e os juros do seu vencimento.
+
+### Presença e falta
+
+- **RN15** Só é permitido um registro por aluno por dia (presença ou falta).
+- **RN16** Aluno inativo ou bloqueado não pode registrar presença. Para um aluno bloqueado, a recepção ainda pode registrar falta.
+- **RN17** As faltas são contadas automaticamente: cada dia de treino do aluno (dias úteis escolhidos no cadastro), da matrícula até ontem, sem presença registrada é uma falta. Faltas registradas manualmente também contam, sem duplicar.
+- **RN18** Com 5 faltas seguidas, o aluno aparece no alerta do painel e na lista de alunos, para a recepção entrar em contato.
 
 ## URLs importantes
 
@@ -163,21 +176,32 @@ CPFs válidos e livres para testar novos cadastros: `321.654.987-91`, `741.852.9
 
 ### Endpoints da API
 
-| Método | Rota                           | Descrição                                   |
-|--------|--------------------------------|---------------------------------------------|
-| POST   | `/api/auth/login`              | Login (retorna token JWT)                   |
-| GET    | `/api/auth/me`                 | Usuário autenticado                         |
-| GET    | `/api/planos`                  | Lista os planos                             |
-| GET    | `/api/alunos`                  | Lista alunos com situação (`?busca=&status=`)|
-| POST   | `/api/alunos`                  | Cadastra aluno                              |
-| GET    | `/api/alunos/{id}`             | Detalha aluno                               |
-| GET    | `/api/alunos/{id}/situacao`    | Situação financeira do aluno                |
-| GET    | `/api/alunos/{id}/pagamentos`  | Histórico de pagamentos do aluno            |
-| GET    | `/api/alunos/{id}/presencas`   | Presenças, faltas e frequência do aluno     |
-| GET    | `/api/pagamentos`              | Lista pagamentos (`?alunoId=`)              |
-| POST   | `/api/pagamentos`              | Registra pagamento                          |
-| GET    | `/api/presencas`               | Lista registros (`?alunoId=&data=&dataInicio=&dataFim=`) |
-| POST   | `/api/presencas`               | Registra presença ou falta                  |
+| Método | Rota                              | Descrição                                       | Perfil |
+|--------|-----------------------------------|-------------------------------------------------|--------|
+| POST   | `/api/auth/login`                 | Login (retorna token JWT)                       | —      |
+| GET    | `/api/auth/me`                    | Usuário autenticado                             | Todos  |
+| PUT    | `/api/auth/senha`                 | Altera a própria senha                          | Todos  |
+| GET    | `/api/usuarios`                   | Lista usuários                                  | Admin  |
+| POST   | `/api/usuarios`                   | Cria usuário                                    | Admin  |
+| PATCH  | `/api/usuarios/{id}/desbloquear`  | Remove o bloqueio de login                      | Admin  |
+| GET    | `/api/planos`                     | Lista os planos                                 | Todos  |
+| PUT    | `/api/planos/{id}`                | Altera o valor de um plano                      | Admin  |
+| GET    | `/api/alunos`                     | Consulta alunos (`?busca=&ativo=&status=&alerta=`) | Todos |
+| POST   | `/api/alunos`                     | Cadastra aluno                                  | Todos  |
+| GET    | `/api/alunos/{id}`                | Detalha aluno                                   | Todos  |
+| PUT    | `/api/alunos/{id}`                | Edita aluno                                     | Todos  |
+| PATCH  | `/api/alunos/{id}/inativar`       | Inativa aluno                                   | Admin  |
+| PATCH  | `/api/alunos/{id}/reativar`       | Reativa aluno                                   | Admin  |
+| GET    | `/api/alunos/{id}/situacao`       | Situação financeira                             | Todos  |
+| GET    | `/api/alunos/{id}/cobranca`       | Valor a pagar hoje ou em uma data (`?data=`)    | Todos  |
+| GET    | `/api/alunos/{id}/pagamentos`     | Histórico de pagamentos                         | Todos  |
+| GET    | `/api/alunos/{id}/presencas`      | Histórico de frequência e faltas                | Todos  |
+| GET    | `/api/pagamentos`                 | Lista pagamentos (`?alunoId=&mes=`)             | Todos  |
+| POST   | `/api/pagamentos`                 | Registra pagamento                              | Todos  |
+| GET    | `/api/presencas`                  | Lista registros (`?alunoId=&data=&dataInicio=&dataFim=`) | Todos |
+| POST   | `/api/presencas`                  | Registra presença ou falta                      | Todos  |
+| GET    | `/api/painel`                     | Painel inicial                                  | Todos  |
+| GET    | `/api/relatorios/recebimentos`    | Relatório mensal (`?mes=AAAA-MM`)               | Todos  |
 
 ### Exemplos com curl
 
@@ -186,9 +210,13 @@ TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: a
 ```
 
 ```bash
-curl -s -X POST http://localhost:3000/api/alunos -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"nome":"Fernanda Alves","cpf":"321.654.987-91","dataNascimento":"1992-06-20","telefone":"11988887777","plano":"MENSAL"}'
+curl -s -X POST http://localhost:3000/api/alunos -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"nome":"Gabriela Torres","cpf":"135.792.468-28","dataNascimento":"1992-06-20","telefone":"11988887777","plano":"MENSAL","diasTreino":[1,3,5]}'
 ```
 
 ```bash
-curl -s http://localhost:3000/api/alunos?status=BLOQUEADO -H "Authorization: Bearer $TOKEN"
+curl -s "http://localhost:3000/api/alunos?alerta=true" -H "Authorization: Bearer $TOKEN"
+```
+
+```bash
+curl -s "http://localhost:3000/api/relatorios/recebimentos?mes=2026-11" -H "Authorization: Bearer $TOKEN"
 ```

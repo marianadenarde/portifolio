@@ -1,8 +1,8 @@
 const Presenca = require('../models/Presenca');
 const AppError = require('../utils/AppError');
 const { hoje, dataValida } = require('../utils/datas');
-const { buscarDocumento } = require('./alunoService');
-const { calcularSituacao } = require('./situacaoService');
+const { buscarDocumento, detalhar } = require('./alunoService');
+const { calcularSituacao } = require('./mensalidadeService');
 
 const STATUS = ['PRESENTE', 'FALTA'];
 
@@ -18,19 +18,19 @@ async function registrar(dados = {}, usuario) {
   if (erros.length) throw new AppError(400, 'Dados inválidos.', erros);
 
   const aluno = await buscarDocumento(dados.alunoId);
+  // RN16: aluno inativo não registra presença (nem falta, pois não tem mais dias de treino)
+  if (!aluno.ativo) throw new AppError(422, 'Aluno inativo. Reative o cadastro para registrar presença ou falta.');
   if (data < aluno.dataMatricula) {
     throw new AppError(422, 'Não é possível registrar presença/falta antes da data de matrícula.');
   }
 
-  // Regra 4: aluno inadimplente há mais de 30 dias não pode registrar presença
+  // RN14 / RN16: aluno bloqueado por inadimplência não registra presença
   if (status === 'PRESENTE') {
-    const situacao = await calcularSituacao(aluno, data);
-    if (!situacao.podeRegistrarPresenca) {
-      throw new AppError(403, `Aluno bloqueado: ${situacao.descricao}`, { situacao });
-    }
+    const situacao = await calcularSituacao(aluno, aluno.plano, data);
+    if (situacao.bloqueado) throw new AppError(403, `Aluno bloqueado: ${situacao.descricao}`, { situacao });
   }
 
-  // Regra 5: um registro por aluno por dia
+  // RN15: um registro por aluno por dia
   const existente = await Presenca.findOne({ aluno: aluno._id, data }).lean();
   if (existente) {
     throw new AppError(409, `Já existe um registro (${existente.status}) para este aluno em ${data}. Só é permitida uma presença por dia.`);
@@ -57,18 +57,11 @@ async function listar({ alunoId, data, dataInicio, dataFim } = {}) {
   return Presenca.find(filtro).populate('aluno', 'nome cpf').sort({ data: -1, createdAt: -1 });
 }
 
-async function resumoDoAluno(alunoId) {
-  const aluno = await buscarDocumento(alunoId);
+/** Histórico de frequência do aluno: resumo (RN17/RN18) + registros. */
+async function historicoDoAluno(alunoId) {
+  const aluno = await detalhar(alunoId);
   const registros = await Presenca.find({ aluno: aluno._id }).sort({ data: -1 }).lean();
-  const presencas = registros.filter((r) => r.status === 'PRESENTE').length;
-  const faltas = registros.length - presencas;
-  return {
-    aluno: { _id: aluno._id, nome: aluno.nome },
-    totalPresencas: presencas,
-    totalFaltas: faltas,
-    frequencia: registros.length ? Number(((presencas / registros.length) * 100).toFixed(1)) : null,
-    registros,
-  };
+  return { aluno: { _id: aluno._id, nome: aluno.nome }, ...aluno.frequencia, registros };
 }
 
-module.exports = { registrar, listar, resumoDoAluno };
+module.exports = { registrar, listar, historicoDoAluno };

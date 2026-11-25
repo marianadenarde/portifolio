@@ -29,6 +29,9 @@ app.use('/api/planos', autenticar, require('./routes/planos'));
 app.use('/api/alunos', autenticar, require('./routes/alunos'));
 app.use('/api/pagamentos', autenticar, require('./routes/pagamentos'));
 app.use('/api/presencas', autenticar, require('./routes/presencas'));
+app.use('/api/usuarios', autenticar, require('./routes/usuarios'));
+app.use('/api/painel', autenticar, require('./routes/painel'));
+app.use('/api/relatorios', autenticar, require('./routes/relatorios'));
 app.use('/api', naoEncontrado);
 
 // Site Web
