@@ -14,12 +14,12 @@
   <section id="tela-login" class="tela-login" hidden>
     <form id="form-login" class="cartao login">
       <h1>MyGym</h1>
-      <p class="sub">Acesse o sistema de gestão</p>
-      <label>E-mail <input type="email" name="email" required autocomplete="username" value="admin@academia.com"></label>
-      <label>Senha <input type="password" name="senha" required autocomplete="current-password" value="admin123"></label>
+      <p class="sub">Acesso para funcionários da academia</p>
+      <label>E-mail <input id="login-email" type="email" name="email" required autocomplete="username" value="admin@academia.com"></label>
+      <label>Senha <input id="login-senha" type="password" name="senha" required autocomplete="current-password" value="admin123"></label>
       <button type="submit">Entrar</button>
       <p class="mensagem" id="msg-login" role="alert"></p>
-      <p class="dica">Usuários de teste: admin@academia.com / admin123 · recepcao@academia.com / recepcao123 · instrutor@academia.com / instrutor123</p>
+      <p class="dica">Usuários de teste: admin@academia.com / admin123 (Administrador) · recepcao@academia.com / recepcao123 (Recepção) · recepcao2@academia.com / recepcao456 (Recepção)</p>
     </form>
   </section>
 
@@ -28,97 +28,147 @@
     <header class="topo">
       <strong>MyGym</strong>
       <nav>
-        <button class="aba ativa" data-aba="alunos">Alunos</button>
+        <button class="aba ativa" data-aba="painel">Painel</button>
+        <button class="aba" data-aba="alunos">Alunos</button>
         <button class="aba" data-aba="cadastro">Cadastrar aluno</button>
-        <button class="aba" data-aba="pagamentos">Pagamentos</button>
-        <button class="aba" data-aba="presencas">Presenças</button>
+        <button class="aba" data-aba="pagamentos">Mensalidades</button>
+        <button class="aba" data-aba="presencas">Frequência</button>
+        <button class="aba" data-aba="relatorio">Relatório</button>
+        <button class="aba" data-aba="config">Configurações</button>
       </nav>
       <div class="usuario"><span id="nome-usuario"></span> <button id="btn-sair" class="link">Sair</button></div>
     </header>
 
     <main>
-      <!-- Alunos -->
-      <section id="aba-alunos" class="painel">
+      <!-- Painel -->
+      <section id="aba-painel" class="painel">
         <div class="barra">
-          <h2>Alunos e situação</h2>
+          <h2>Painel</h2>
+          <span class="info" id="painel-data"></span>
+        </div>
+        <div class="kpis" id="painel-kpis"></div>
+        <div class="colunas painel-listas">
+          <div class="cartao">
+            <h3 class="sem-margem">Alerta de faltas</h3>
+            <p class="info">Alunos com 5 faltas seguidas ou mais. Entre em contato para evitar desistências.</p>
+            <ul class="lista-alertas" id="painel-alertas"></ul>
+          </div>
+          <div class="cartao">
+            <h3 class="sem-margem">Mensalidades em atraso</h3>
+            <p class="info">Pendentes (até 5 dias) e inadimplentes, do maior atraso para o menor.</p>
+            <ul class="lista-alertas" id="painel-atrasos"></ul>
+          </div>
+        </div>
+        <div class="cartao">
+          <h3 class="sem-margem">Presenças de hoje</h3>
+          <p class="info" id="painel-presencas"></p>
+        </div>
+      </section>
+
+      <!-- Alunos -->
+      <section id="aba-alunos" class="painel" hidden>
+        <div class="barra">
+          <h2>Alunos</h2>
           <div class="filtros">
             <input id="busca-aluno" type="search" placeholder="Buscar por nome ou CPF">
-            <select id="filtro-status">
+            <select id="filtro-ativo" aria-label="Cadastro">
+              <option value="true">Ativos</option>
+              <option value="false">Inativos</option>
+              <option value="todos">Todos</option>
+            </select>
+            <select id="filtro-status" aria-label="Situação">
               <option value="">Todas as situações</option>
               <option value="EM_DIA">Em dia</option>
+              <option value="PENDENTE">Pendente</option>
               <option value="INADIMPLENTE">Inadimplente</option>
               <option value="BLOQUEADO">Bloqueado</option>
             </select>
+            <label class="inline check"><input id="filtro-alerta" type="checkbox"> Só com alerta de faltas</label>
           </div>
         </div>
         <div class="tabela-wrap">
           <table>
-            <thead><tr><th>Nome</th><th>CPF</th><th>Idade</th><th>Plano</th><th>Pago até</th><th>Situação</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>CPF</th><th>Plano</th><th>Treinos</th><th>Vencimento</th><th>Situação</th><th>Faltas seguidas</th><th></th></tr></thead>
             <tbody id="lista-alunos"></tbody>
           </table>
         </div>
         <div id="detalhe-aluno" class="cartao detalhe" hidden></div>
       </section>
 
-      <!-- Cadastro -->
+      <!-- Cadastro / edição -->
       <section id="aba-cadastro" class="painel" hidden>
-        <h2>Cadastrar aluno</h2>
+        <h2 id="titulo-form-aluno">Cadastrar aluno</h2>
         <form id="form-aluno" class="cartao formulario">
-          <label>Nome* <input name="nome" required></label>
-          <label>CPF* <input name="cpf" required placeholder="000.000.000-00"></label>
-          <label>Data de nascimento* <input name="dataNascimento" type="date" required></label>
-          <label>Telefone* <input name="telefone" required placeholder="(11) 98888-7777"></label>
+          <label>Nome* <input id="aluno-nome" name="nome" required></label>
+          <label>CPF* <input id="aluno-cpf" name="cpf" required placeholder="000.000.000-00"></label>
+          <label>Data de nascimento* <input id="aluno-nascimento" name="dataNascimento" type="date" required></label>
+          <label>Telefone* <input id="aluno-telefone" name="telefone" required placeholder="(11) 98888-7777"></label>
           <label>Plano* <select name="plano" id="select-plano" required></select></label>
-          <fieldset id="grupo-responsavel" hidden>
+          <fieldset class="dias-treino">
+            <legend>Dias de treino</legend>
+            <label class="inline check"><input type="checkbox" name="diasTreino" value="1" checked> Seg</label>
+            <label class="inline check"><input type="checkbox" name="diasTreino" value="2" checked> Ter</label>
+            <label class="inline check"><input type="checkbox" name="diasTreino" value="3" checked> Qua</label>
+            <label class="inline check"><input type="checkbox" name="diasTreino" value="4" checked> Qui</label>
+            <label class="inline check"><input type="checkbox" name="diasTreino" value="5" checked> Sex</label>
+          </fieldset>
+          <fieldset id="grupo-responsavel" class="responsavel" hidden>
             <legend>Responsável (obrigatório para menores de 18 anos)</legend>
-            <label>Nome do responsável* <input name="respNome"></label>
-            <label>CPF do responsável* <input name="respCpf"></label>
-            <label>Telefone do responsável* <input name="respTelefone"></label>
+            <label>Nome do responsável* <input id="resp-nome" name="respNome"></label>
+            <label>CPF do responsável* <input id="resp-cpf" name="respCpf"></label>
+            <label>Telefone do responsável* <input id="resp-telefone" name="respTelefone"></label>
           </fieldset>
           <p class="info" id="info-idade"></p>
-          <button type="submit">Cadastrar</button>
+          <div class="botoes">
+            <button type="submit" id="btn-salvar-aluno">Cadastrar</button>
+            <button type="button" id="btn-cancelar-edicao" class="secundario" hidden>Cancelar edição</button>
+          </div>
           <p class="mensagem" id="msg-aluno" role="alert"></p>
         </form>
       </section>
 
-      <!-- Pagamentos -->
+      <!-- Mensalidades -->
       <section id="aba-pagamentos" class="painel" hidden>
         <h2>Registrar pagamento</h2>
         <form id="form-pagamento" class="cartao formulario">
-          <label>Aluno* <select name="alunoId" class="select-aluno" required></select></label>
-          <p class="info" id="info-pagamento"></p>
+          <label>Aluno* <select id="pagamento-aluno" name="alunoId" class="select-aluno" required></select></label>
+          <label>Data do pagamento <input id="pagamento-data" name="dataPagamento" type="date"></label>
           <label>Forma de pagamento*
-            <select name="formaPagamento" required>
+            <select id="pagamento-forma" name="formaPagamento" required>
               <option value="PIX">PIX</option>
               <option value="DINHEIRO">Dinheiro</option>
               <option value="CARTAO_DEBITO">Cartão de débito</option>
               <option value="CARTAO_CREDITO">Cartão de crédito</option>
             </select>
           </label>
-          <label>Data do pagamento <input name="dataPagamento" type="date"></label>
-          <button type="submit">Registrar pagamento</button>
+          <div class="cobranca" id="info-cobranca" hidden></div>
+          <div class="botoes"><button type="submit">Registrar pagamento</button></div>
           <p class="mensagem" id="msg-pagamento" role="alert"></p>
         </form>
-        <h3>Pagamentos registrados</h3>
+        <div class="barra">
+          <h3>Pagamentos registrados</h3>
+          <label class="inline">Mês <input id="filtro-mes-pagamentos" type="month"></label>
+        </div>
         <div class="tabela-wrap">
           <table>
-            <thead><tr><th>Data</th><th>Aluno</th><th>Plano</th><th>Valor</th><th>Forma</th><th>Período coberto</th></tr></thead>
+            <thead><tr><th>Data</th><th>Aluno</th><th>Plano</th><th>Vencimento</th><th>Atraso</th><th>Multa + juros</th><th>Total</th><th>Forma</th><th>Período</th></tr></thead>
             <tbody id="lista-pagamentos"></tbody>
           </table>
         </div>
       </section>
 
-      <!-- Presenças -->
+      <!-- Frequência -->
       <section id="aba-presencas" class="painel" hidden>
         <h2>Registrar presença ou falta</h2>
         <form id="form-presenca" class="cartao formulario">
-          <label>Aluno* <select name="alunoId" class="select-aluno" required></select></label>
+          <label>Aluno* <select id="presenca-aluno" name="alunoId" class="select-aluno" required></select></label>
+          <label>Data <input id="presenca-data" name="data" type="date"></label>
           <p class="info" id="info-presenca"></p>
-          <label>Data <input name="data" type="date"></label>
           <div class="botoes">
             <button type="submit" name="status" value="PRESENTE">Registrar presença</button>
             <button type="submit" name="status" value="FALTA" class="secundario">Registrar falta</button>
           </div>
+          <p class="info nota">As faltas também são contadas automaticamente nos dias de treino do aluno sem presença.</p>
           <p class="mensagem" id="msg-presenca" role="alert"></p>
         </form>
         <div class="barra">
@@ -130,6 +180,78 @@
             <thead><tr><th>Data</th><th>Aluno</th><th>Registro</th></tr></thead>
             <tbody id="lista-presencas"></tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- Relatório -->
+      <section id="aba-relatorio" class="painel" hidden>
+        <div class="barra">
+          <h2>Relatório de recebimentos</h2>
+          <label class="inline">Mês <input id="relatorio-mes" type="month"></label>
+        </div>
+        <div class="kpis" id="relatorio-kpis"></div>
+        <div class="colunas">
+          <div class="cartao"><h3 class="sem-margem">Por forma de pagamento</h3><ul class="lista-valores" id="relatorio-formas"></ul></div>
+          <div class="cartao"><h3 class="sem-margem">Por plano</h3><ul class="lista-valores" id="relatorio-planos"></ul></div>
+        </div>
+        <h3>Pagamentos do mês</h3>
+        <div class="tabela-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Aluno</th><th>Plano</th><th>Valor do plano</th><th>Multa</th><th>Juros</th><th>Total</th><th>Forma</th></tr></thead>
+            <tbody id="relatorio-lista"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Configurações -->
+      <section id="aba-config" class="painel" hidden>
+        <h2>Configurações</h2>
+        <div class="cartao">
+          <h3 class="sem-margem">Planos</h3>
+          <p class="info" id="info-planos"></p>
+          <div class="tabela-wrap plana">
+            <table>
+              <thead><tr><th>Plano</th><th>Duração</th><th>Valor</th><th class="so-admin"></th></tr></thead>
+              <tbody id="lista-planos"></tbody>
+            </table>
+          </div>
+          <p class="mensagem" id="msg-planos" role="alert"></p>
+        </div>
+
+        <div class="colunas">
+          <form id="form-senha" class="cartao formulario formulario-coluna">
+            <h3 class="sem-margem">Alterar minha senha</h3>
+            <label>Senha atual <input id="senha-atual" type="password" name="senhaAtual" required autocomplete="current-password"></label>
+            <label>Nova senha <input id="senha-nova" type="password" name="novaSenha" required autocomplete="new-password"></label>
+            <p class="info">Mínimo de 8 caracteres, com pelo menos uma letra e um número.</p>
+            <div class="botoes"><button type="submit">Alterar senha</button></div>
+            <p class="mensagem" id="msg-senha" role="alert"></p>
+          </form>
+
+          <form id="form-usuario" class="cartao formulario formulario-coluna so-admin">
+            <h3 class="sem-margem">Novo usuário</h3>
+            <label>Nome <input id="usuario-nome" name="nome" required></label>
+            <label>E-mail <input id="usuario-email" name="email" type="email" required></label>
+            <label>Senha <input id="usuario-senha" name="senha" type="password" required autocomplete="new-password"></label>
+            <label>Perfil
+              <select id="usuario-perfil" name="perfil">
+                <option value="RECEPCAO">Recepção</option>
+                <option value="ADMIN">Administrador</option>
+              </select>
+            </label>
+            <div class="botoes"><button type="submit">Criar usuário</button></div>
+            <p class="mensagem" id="msg-usuario" role="alert"></p>
+          </form>
+        </div>
+
+        <div class="so-admin">
+          <h3>Usuários</h3>
+          <div class="tabela-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Acesso</th><th></th></tr></thead>
+              <tbody id="lista-usuarios"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>

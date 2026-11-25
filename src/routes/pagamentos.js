@@ -4,7 +4,7 @@ const pagamentoService = require('../services/pagamentoService');
 const router = Router();
 
 router.get('/', async (req, res) => {
-  res.json(await pagamentoService.listar({ alunoId: req.query.alunoId }));
+  res.json(await pagamentoService.listar({ alunoId: req.query.alunoId, mes: req.query.mes }));
 });
 
 router.post('/', async (req, res) => {

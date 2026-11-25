@@ -16,8 +16,14 @@ const alunoSchema = new mongoose.Schema(
     dataNascimento: { type: String, required: true }, // YYYY-MM-DD
     telefone: { type: String, required: true },
     plano: { type: mongoose.Schema.Types.ObjectId, ref: 'Plano', required: true },
-    dataMatricula: { type: String, required: true }, // YYYY-MM-DD
+    dataMatricula: { type: String, required: true }, // YYYY-MM-DD — define o dia de vencimento (RN10)
     responsavel: { type: responsavelSchema, default: null },
+    // RN17: dias de treino na semana (1 = segunda ... 5 = sexta)
+    diasTreino: { type: [Number], default: [1, 2, 3, 4, 5] },
+    // RN08: aluno não é excluído, é inativado
+    ativo: { type: Boolean, default: true },
+    dataInativacao: { type: String, default: null },
+    motivoInativacao: { type: String, default: null },
   },
   { timestamps: true, versionKey: false }
 );

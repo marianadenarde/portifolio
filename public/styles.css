@@ -253,14 +253,13 @@ main {
 }
 .formulario fieldset {
   grid-column: 1 / -1;
-  border: 1px dashed var(--alerta);
+  border: 1px solid var(--borda);
   border-radius: 8px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   padding: 16px;
   margin: 0;
-  background: var(--alerta-bg);
 }
 .formulario legend {
   font-family: var(--fonte-titulo);
@@ -268,9 +267,13 @@ main {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--alerta);
+  color: var(--suave);
   padding: 0 8px;
 }
+.formulario fieldset.responsavel { border: 1px dashed var(--alerta); background: var(--alerta-bg); }
+.formulario fieldset.responsavel legend { color: var(--alerta); }
+.formulario fieldset.dias-treino { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.formulario-coluna { grid-template-columns: 1fr; align-content: start; }
 .formulario .mensagem, .formulario .info { grid-column: 1 / -1; }
 .botoes { display: flex; gap: 10px; flex-wrap: wrap; grid-column: 1 / -1; }
 .painel > .barra:not(:first-child) { margin-top: 32px; }
@@ -320,7 +323,9 @@ td:first-child { font-weight: 600; }
   background: currentColor;
 }
 .selo.EM_DIA, .selo.PRESENTE { background: var(--ok-bg); color: var(--ok); }
-.selo.INADIMPLENTE { background: var(--alerta-bg); color: var(--alerta); }
+.selo.PENDENTE { background: var(--alerta-bg); color: var(--alerta); }
+.selo.INADIMPLENTE { background: rgba(255, 140, 66, 0.14); color: #ff9a52; }
+.selo.INATIVO { background: var(--superficie-2); color: var(--suave); }
 .selo.BLOQUEADO, .selo.FALTA { background: var(--erro-bg); color: var(--erro); }
 .selo.BLOQUEADO::before { box-shadow: 0 0 0 3px rgba(255, 93, 93, 0.25); }
 
@@ -371,6 +376,121 @@ td:first-child { font-weight: 600; }
 .rodape a { color: var(--suave); text-decoration: none; border-bottom: 1px solid var(--borda); }
 .rodape a:hover { color: var(--primaria); border-color: var(--primaria); }
 
+/* ---------- Perfis ---------- */
+.so-admin { display: none !important; }
+body.perfil-admin .so-admin { display: revert !important; }
+body.perfil-admin form.so-admin { display: grid !important; }
+
+/* ---------- Checkboxes ---------- */
+label.check {
+  font-family: var(--fonte-texto);
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--texto);
+  cursor: pointer;
+  gap: 8px;
+}
+label.check input { width: 18px; height: 18px; accent-color: var(--primaria); margin: 0; }
+
+/* ---------- Painel e relatório ---------- */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  border-top: 3px solid var(--borda);
+}
+.kpi-valor {
+  font-family: var(--fonte-titulo);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-nome {
+  font-family: var(--fonte-titulo);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--suave);
+}
+.kpi.destaque { border-top-color: var(--primaria); }
+.kpi.destaque .kpi-valor { color: var(--primaria); }
+.kpi.ok { border-top-color: var(--ok); }
+.kpi.alerta { border-top-color: var(--alerta); }
+.kpi.erro { border-top-color: var(--erro); }
+.painel-listas { margin-bottom: 20px; }
+.sem-margem { margin-top: 0 !important; }
+.painel .cartao + .cartao, .painel .colunas + .cartao { margin-top: 0; }
+.lista-alertas, .lista-valores { list-style: none; padding: 0; margin: 12px 0 0; }
+.lista-alertas li, .lista-valores li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+  flex-wrap: wrap;
+}
+.lista-alertas li:last-child, .lista-valores li:last-child { border-bottom: 0; }
+.lista-alertas li > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lista-alertas .link { font-family: var(--fonte-texto); font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--texto); text-align: left; }
+.lista-alertas .link:hover { color: var(--primaria); }
+.lista-valores li { font-variant-numeric: tabular-nums; }
+
+/* ---------- Cobrança ---------- */
+.cobranca {
+  grid-column: 1 / -1;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 16px;
+}
+.cobranca-cabecalho { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; color: var(--suave); }
+.cobranca-valores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 14px 0 0;
+}
+.cobranca-valores dt { font-family: var(--fonte-titulo); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--suave); }
+.cobranca-valores dd { margin: 2px 0 0; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cobranca-valores .total dd { font-family: var(--fonte-titulo); font-size: 28px; font-weight: 800; color: var(--primaria); line-height: 1.1; }
+
+/* ---------- Detalhe e ações ---------- */
+.linha-selos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.confirmacao {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--erro);
+  border-radius: 8px;
+  background: var(--erro-bg);
+  display: grid;
+  gap: 12px;
+}
+button.perigo { color: var(--erro); border-color: rgba(255, 93, 93, 0.5); }
+button.perigo:hover { color: var(--erro); border-color: var(--erro); }
+button.perigo-cheio { background: var(--erro); color: var(--primaria-texto); }
+button.perigo-cheio:hover { background: #ff7676; }
+#msg-detalhe:not(:empty) { margin-top: 12px; }
+tr.inativo td { color: var(--suave); }
+.tabela-wrap.plana { margin-top: 12px; background: transparent; }
+.valor-plano { max-width: 140px; }
+.nota { font-size: 13px; }
+.painel > .cartao, .painel > .colunas { margin-bottom: 20px; }
+
 @media (max-width: 640px) {
   .topo { gap: 12px; }
   h2 { font-size: 26px; }
@@ -380,3 +500,9 @@ td:first-child { font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Filtros da lista de alunos ocupam uma linha inteira abaixo do título */
+#aba-alunos .barra { flex-direction: column; align-items: stretch; }
+#aba-alunos .filtros { flex: 1 1 auto; align-items: center; }
+#aba-alunos .filtros input[type="search"] { flex: 1 1 260px; }
+#aba-alunos .filtros label.check { flex: 0 0 auto; }
